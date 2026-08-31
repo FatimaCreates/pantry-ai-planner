@@ -105,7 +105,29 @@ The prompt forces structured JSON output so the frontend can render results reli
 
 ## Testing
 
-_(To be added — unit tests in progress)_
+## Testing
+
+Unit tests written with **Vitest** + **React Testing Library**, covering the main `Home` component (`app/page.tsx`).
+
+**Coverage:**
+- Renders heading, ingredients input, and submit button correctly
+- Shows a validation error when submitting with empty ingredients
+- Renders recipe results after a successful (mocked) API call
+
+**Run tests:**
+```bash
+npm run test
+```
+
+**Result:**
+```
+Test Files  1 passed (1)
+     Tests  3 passed (3)
+
+✓ renders the heading, ingredients input, and submit button
+✓ shows a validation error when submitting with empty ingredients
+✓ renders recipes returned from the API after a successful submission
+```
 
 ---
 
