@@ -1,36 +1,134 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pantry AI Planner
 
-## Getting Started
+Tell us what's in your pantry, and get instant recipe ideas — powered by Claude AI.
 
-First, run the development server:
+**Live App:** [pantry-ai-planner.vercel.app](https://pantry-ai-planner.vercel.app)
+
+---
+
+## Project Brief
+
+Pantry AI Planner solves a small but common problem: staring at a fridge full of random ingredients with no idea what to cook. It's built for home cooks who want quick, realistic recipe suggestions based on what they already have, instead of searching recipe sites for exact ingredient matches. I chose this idea because it combines a genuinely useful everyday problem with a natural fit for LLM reasoning — turning loose, unstructured pantry items into structured, actionable recipes is exactly the kind of task a language model handles better than a rule-based lookup.
+
+---
+
+## Setup & Run Locally
 
 ```bash
+git clone https://github.com/FatimaCreates/pantry-ai-planner.git
+cd pantry-ai-planner
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create a `.env.local` file in the project root:
 
-## Learn More
+```
+ANTHROPIC_API_KEY=your_key_here
+USE_MOCK_DATA=true
+```
 
-To learn more about Next.js, take a look at the following resources:
+- Get a free API key at [console.anthropic.com](https://console.anthropic.com)
+- Set `USE_MOCK_DATA=true` to run the app without any API key or credits (returns sample recipes)
+- Set `USE_MOCK_DATA=false` to use real Claude API responses
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Architecture Overview
 
-## Deploy on Vercel
+```
+app/
+├── page.tsx            # Main UI — ingredient input form, recipe results display
+├── api/
+│   └── recipes/
+│       └── route.ts    # POST endpoint — validates input, calls Claude API (or returns mock data)
+├── layout.tsx           # Root layout
+└── globals.css          # Global styles
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Flow:**
+1. User types ingredients into a textarea on the frontend (`page.tsx`)
+2. Frontend sends a POST request to `/api/recipes` with `{ ingredients: string }`
+3. The API route (`route.ts`) either:
+   - Returns mock recipe data instantly (if `USE_MOCK_DATA=true`), or
+   - Calls the Claude API with a structured prompt and returns parsed JSON
+4. Frontend renders the returned recipes (name, ingredients used, missing ingredients, steps)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The API key is **never exposed to the browser** — all Claude API calls happen server-side inside the Next.js API route.
+
+---
+
+## AI Integration
+
+**Model:** `claude-sonnet-4-6` via the Anthropic Messages API
+
+**Why an LLM here:** Ingredient lists are messy, informal, and open-ended ("chicken, some rice, half an onion"). Rather than matching against a fixed recipe database, Claude interprets the input and generates realistic recipes on the fly — including which ingredients are missing, which is genuinely hard to do with static rules.
+
+**Prompt used:**
+
+```
+You are a helpful cooking assistant. Based on these pantry ingredients: "{ingredients}", 
+suggest 3 realistic recipes.
+
+Respond ONLY with valid JSON, no preamble, no markdown fences, in this exact shape:
+{
+  "recipes": [
+    {
+      "name": "string",
+      "usesIngredients": ["string"],
+      "missingIngredients": ["string"],
+      "steps": ["string"]
+    }
+  ]
+}
+```
+
+The prompt forces structured JSON output so the frontend can render results reliably without parsing free-form text.
+
+**Current status:** Due to limited API credits during development, the app currently runs with `USE_MOCK_DATA=true` by default, returning realistic sample data so the full flow can be demonstrated end-to-end. The real API integration code is complete and tested — switching `USE_MOCK_DATA=false` with a funded key activates it immediately, no code changes needed.
+
+---
+
+## Known Limitations & Future Improvements
+
+- **Mock mode default:** Live demo currently uses mock data (see above) — real API calls not yet demonstrated in production due to credit limits
+- No persistence — recipes aren't saved between sessions
+- No dietary preference filtering (vegetarian, allergies, etc.)
+- No loading skeleton — only a basic loading state
+- Future: add recipe saving/favorites, ingredient quantity awareness, dietary filters
+
+---
+
+## Testing
+
+_(To be added — unit tests in progress)_
+
+---
+
+## Performance & Accessibility
+
+_(To be added — Lighthouse and WAVE audit pending)_
+
+---
+
+## Deployment
+
+**Platform:** Vercel (connected to GitHub `main` branch — auto-deploys on push)
+
+**Rollback plan:** If a deployment breaks production, roll back via Vercel Dashboard → Deployments → select last known-good deployment → "Promote to Production". Alternatively, revert the bad commit on `main` and push — Vercel redeploys automatically.
+
+**Error handling:** The API route returns clear error states for:
+- Missing/empty ingredient input (`400`)
+- Claude API failure (`502`)
+- Malformed AI response (`502`)
+- Unexpected server errors (`500`)
+
+---
+
+## Reflection
+
+_(To be added)_
